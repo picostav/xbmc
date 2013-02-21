@@ -92,7 +92,21 @@ bool aml_present()
     else
       has_aml = 0;
   }
-  return has_aml;
+  return has_aml == 1;
+}
+
+bool aml_wired_present()
+{
+  static int has_wired = -1;
+  if (has_wired == -1)
+  {
+    char test[64] = {0};
+    if (aml_get_sysfs_str("/sys/class/net/eth0/operstate", test, 63) != -1)
+      has_wired = 1;
+    else
+      has_wired = 0;
+  }
+  return has_wired == 1;
 }
 
 int aml_get_cputype()
@@ -140,6 +154,20 @@ void aml_cpufreq_limit(bool limit)
     cpufreq = 600000;
 
   aml_set_sysfs_int("/sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq", cpufreq);
+}
+
+void aml_cpufreq_maxlimit(bool limit)
+{
+  if (!aml_wired_present() && aml_get_cputype() > 3)
+  {
+    // this is a MX Stick, they cannot substain 1GHz
+    // operation without overheating so limit them to 800MHz.
+    int cpufreq = 1000000;
+    if (limit)
+      cpufreq = 800000;
+
+    aml_set_sysfs_int("/sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq", cpufreq);
+  }
 }
 
 void aml_set_audio_passthrough(bool passthrough)
