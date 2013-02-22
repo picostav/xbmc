@@ -25,6 +25,7 @@
 #include <fcntl.h>
 #include <string>
 
+#include "utils/log.h"
 #include "utils/StringUtils.h"
 
 int aml_set_sysfs_str(const char *path, const char *val)
@@ -93,6 +94,28 @@ bool aml_present()
       has_aml = 0;
   }
   return has_aml == 1;
+}
+
+void aml_permissions()
+{
+  // most all aml devices are already rooted.
+  int ret = system("ls /system/xbin/su");
+  if (ret != 0)
+  {
+    CLog::Log(LOGWARNING, "aml_permissions: missing su, playback might fail");
+  }
+  else
+  {
+    // certain aml devices have 664 permission, we need 666.
+    system("su -c chmod 666 /sys/class/video/axis");
+    system("su -c chmod 666 /sys/class/video/screen_mode");
+    system("su -c chmod 666 /sys/class/video/disable_video");
+    system("su -c chmod 666 /sys/class/tsync/pts_pcrscr");
+    system("su -c chmod 666 /sys/class/audiodsp/digital_raw");
+    system("su -c chmod 666 /sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq");
+    system("su -c chmod 666 /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq");
+    CLog::Log(LOGINFO, "aml_permissions: permissions changed");
+  }
 }
 
 bool aml_wired_present()
