@@ -114,6 +114,7 @@ void aml_permissions()
     system("su -c chmod 666 /sys/class/audiodsp/digital_raw");
     system("su -c chmod 666 /sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq");
     system("su -c chmod 666 /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq");
+    system("su -c chmod 666 /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor");
     CLog::Log(LOGINFO, "aml_permissions: permissions changed");
   }
 }
@@ -170,16 +171,20 @@ int aml_get_cputype()
   return aml_cputype;
 }
 
-void aml_cpufreq_limit(bool limit)
+void aml_cpufreq_min(bool limit)
 {
-  int cpufreq = 300000;
-  if (limit)
-    cpufreq = 600000;
+  // only needed for m1/m3 SoCs
+  if (aml_get_cputype() <= 3)
+  {
+    int cpufreq = 300000;
+    if (limit)
+      cpufreq = 600000;
 
-  aml_set_sysfs_int("/sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq", cpufreq);
+    aml_set_sysfs_int("/sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq", cpufreq);
+  }
 }
 
-void aml_cpufreq_maxlimit(bool limit)
+void aml_cpufreq_max(bool limit)
 {
   if (!aml_wired_present() && aml_get_cputype() > 3)
   {
@@ -190,6 +195,7 @@ void aml_cpufreq_maxlimit(bool limit)
       cpufreq = 800000;
 
     aml_set_sysfs_int("/sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq", cpufreq);
+    aml_set_sysfs_str("/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor", "ondemand");
   }
 }
 

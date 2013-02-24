@@ -28,6 +28,6 @@ bool aml_present();
 void aml_permissions();
 bool aml_wired_present();
 int  aml_get_cputype();
-void aml_cpufreq_limit(bool limit);
-void aml_cpufreq_maxlimit(bool limit);
+void aml_cpufreq_min(bool limit);
+void aml_cpufreq_max(bool limit);
 void aml_set_audio_passthrough(bool passthrough);

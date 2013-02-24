@@ -50,7 +50,7 @@ void CEGLNativeTypeAndroid::Initialize()
 {
 #if defined(TARGET_ANDROID) && (defined(HAS_AMLPLAYER) || defined(HAS_LIBAMCODEC))
   aml_permissions();
-  aml_cpufreq_maxlimit(true);
+  aml_cpufreq_max(true);
 #endif
 
   return;
@@ -58,7 +58,7 @@ void CEGLNativeTypeAndroid::Initialize()
 void CEGLNativeTypeAndroid::Destroy()
 {
 #if defined(TARGET_ANDROID) && (defined(HAS_AMLPLAYER) || defined(HAS_LIBAMCODEC))
-  aml_cpufreq_maxlimit(false);
+  aml_cpufreq_max(false);
 #endif
 
   return;

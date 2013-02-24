@@ -73,14 +73,14 @@ CAESinkAUDIOTRACK::CAESinkAUDIOTRACK()
   m_sinkbuffer = NULL;
   m_alignedS16LE = NULL;
 #if defined(HAS_AMLPLAYER) || defined(HAS_LIBAMCODEC)
-  aml_cpufreq_limit(true);
+  aml_cpufreq_min(true);
 #endif
 }
 
 CAESinkAUDIOTRACK::~CAESinkAUDIOTRACK()
 {
 #if defined(HAS_AMLPLAYER) || defined(HAS_LIBAMCODEC)
-  aml_cpufreq_limit(false);
+  aml_cpufreq_min(false);
 #endif
 }
 

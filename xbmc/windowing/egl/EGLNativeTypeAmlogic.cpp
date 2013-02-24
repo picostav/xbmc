@@ -62,12 +62,12 @@ bool CEGLNativeTypeAmlogic::CheckCompatibility()
 
 void CEGLNativeTypeAmlogic::Initialize()
 {
-  aml_cpufreq_limit(true);
+  aml_cpufreq_min(true);
   return;
 }
 void CEGLNativeTypeAmlogic::Destroy()
 {
-  aml_cpufreq_limit(false);
+  aml_cpufreq_min(false);
   return;
 }
 
