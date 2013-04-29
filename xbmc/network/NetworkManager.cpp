@@ -30,6 +30,7 @@
 #include "libscrobbler/librefmscrobbler.h"
 #include "linux/ConnmanNetworkManager.h"
 #include "linux/PosixNetworkManager.h"
+#include "linux/AndroidNetworkManager.h"
 #include "windows/WinNetworkManager.h"
 #include "utils/log.h"
 #include "utils/RssReader.h"
@@ -53,6 +54,11 @@ void CNetworkManager::Initialize()
 #ifdef HAS_DBUS
 //  if (CConnmanNetworkManager::HasConnman())
 //    m_instance = new CConnmanNetworkManager();
+#endif
+
+#if defined(TARGET_ANDROID)
+  if (m_instance == NULL)
+    m_instance = new CAndroidNetworkManager();
 #endif
 
 #if defined(TARGET_POSIX)

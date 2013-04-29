@@ -1,7 +1,9 @@
 #SRCS  = ConnmanConnection.cpp
 #SRCS += ConnmanNetworkManager.cpp
 SRCS += PosixConnection.cpp
+SRCS += AndroidConnection.cpp
 SRCS += PosixNetworkManager.cpp
+SRCS += AndroidNetworkManager.cpp
 SRCS += ZeroconfAvahi.cpp
 SRCS += ZeroconfBrowserAvahi.cpp
 
