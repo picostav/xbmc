@@ -259,7 +259,7 @@ bool CDVDDemuxFFmpeg::Open(CDVDInputStream* pInput)
   m_pInput = pInput;
   strFile = m_pInput->GetFileName();
 
-  bool streaminfo = false; /* set to true if we want to look for streams before playback*/
+  bool streaminfo = true; /* set to true if we want to look for streams before playback*/
 
   if( m_pInput->GetContent().length() > 0 )
   {
@@ -454,10 +454,10 @@ bool CDVDDemuxFFmpeg::Open(CDVDInputStream* pInput)
   // we need to know if this is matroska or avi later
   m_bMatroska = strncmp(m_pFormatContext->iformat->name, "matroska", 8) == 0;	// for "matroska.webm"
   m_bAVI = strcmp(m_pFormatContext->iformat->name, "avi") == 0;
-/*
+
   if (strncmp(m_pFormatContext->iformat->name, "mpegts", 6) == 0)
-    m_pFormatContext->max_analyze_duration = 500000;
-*/
+    streaminfo = false;
+
   if (streaminfo)
   {
     /* too speed up dvd switches, only analyse very short */
