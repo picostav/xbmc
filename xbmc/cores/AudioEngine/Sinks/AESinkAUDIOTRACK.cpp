@@ -72,16 +72,19 @@ CAESinkAUDIOTRACK::CAESinkAUDIOTRACK()
 {
   m_sinkbuffer = NULL;
   m_alignedS16LE = NULL;
-#if defined(HAS_AMLPLAYER) || defined(HAS_LIBAMCODEC)
-  aml_cpufreq_min(true);
-#endif
+  m_volume_changed = false;
+  m_min_frames = 0;
+  m_sink_frameSize = 0;
+  m_sinkbuffer_sec = 0.0;
+  m_sinkbuffer_sec_per_byte = 0.0;
+  m_draining = false;
+  m_audiotrackbuffer_sec = 0.0;
+  m_audiotrack_empty_sec = 0.0;
+  m_volume = 0.0;
 }
 
 CAESinkAUDIOTRACK::~CAESinkAUDIOTRACK()
 {
-#if defined(HAS_AMLPLAYER) || defined(HAS_LIBAMCODEC)
-  aml_cpufreq_min(false);
-#endif
 }
 
 bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
