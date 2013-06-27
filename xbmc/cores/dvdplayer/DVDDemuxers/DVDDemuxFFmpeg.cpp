@@ -455,7 +455,7 @@ bool CDVDDemuxFFmpeg::Open(CDVDInputStream* pInput)
   m_bMatroska = strncmp(m_pFormatContext->iformat->name, "matroska", 8) == 0;	// for "matroska.webm"
   m_bAVI = strcmp(m_pFormatContext->iformat->name, "avi") == 0;
 
-  if (strncmp(m_pFormatContext->iformat->name, "mpegts", 6) == 0)
+  if (strncmp(m_pFormatContext->iformat->name, "mpegts", 6) == 0 && strncmp(m_pFormatContext->filename, "udp", 3) == 0)
     streaminfo = false;
 
   if (streaminfo)
