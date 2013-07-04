@@ -7,7 +7,7 @@
 */
 /* Copyright (C) 2007-2011, Amlogic Inc.
 * All right reserved
-*
+* 
 */
 #ifndef CODEC_TYPE_H_
 #define CODEC_TYPE_H_
@@ -15,6 +15,7 @@
 #include "amports/amstream.h"
 #include "amports/vformat.h"
 #include "amports/aformat.h"
+#include "ppmgr/ppmgr.h"
 
 typedef int CODEC_HANDLE;
 
@@ -37,7 +38,7 @@ typedef struct {
     unsigned int    status;  ///< status of video stream
     unsigned int    ratio;   ///< aspect ratio of video source
     void *          param;   ///< other parameters for video decoder
-    unsigned long long ratio64; ///< aspect ratio of video source
+    unsigned long long    ratio64;   ///< aspect ratio of video source
 } dec_sysinfo_t;
 
 typedef struct {
@@ -48,7 +49,7 @@ typedef struct {
     int codec_id;            ///< codec format id
     int block_align;         ///< audio block align from ffmpeg
     int extradata_size;      ///< extra data size
-    char extradata[AUDIO_EXTRA_DATA_SIZE];   ///< extra data information for decoder
+    char extradata[AUDIO_EXTRA_DATA_SIZE];;   ///< extra data information for decoder
 } audio_info_t;
 
 typedef struct {
@@ -56,10 +57,14 @@ typedef struct {
     CODEC_HANDLE cntl_handle;   ///< video control device handler
     CODEC_HANDLE sub_handle;    ///< subtile device handler
     stream_type_t stream_type;  ///< stream type(es, ps, rm, ts)
-    unsigned int has_video:1;   ///< stream has video(1) or not(0)
-    unsigned int has_audio:1;   ///< stream has audio(1) or not(0)
-    unsigned int has_sub:1;     ///< stream has subtitle(1) or not(0)
-    unsigned int noblock:1;     ///< codec device is NONBLOCK(1) or not(0)
+unsigned int has_video:
+    1;                          ///< stream has video(1) or not(0)
+unsigned int  has_audio:
+    1;                          ///< stream has audio(1) or not(0)
+unsigned int has_sub:
+    1;                          ///< stream has subtitle(1) or not(0)
+unsigned int noblock:
+    1;                          ///< codec device is NONBLOCK(1) or not(0)
     int video_type;             ///< stream video type(H264, VC1...)
     int audio_type;             ///< stream audio type(PCM, WMA...)
     int sub_type;               ///< stream subtitle type(TXT, SSA...)
@@ -73,17 +78,20 @@ typedef struct {
     dec_sysinfo_t am_sysinfo;   ///< system information for video
     audio_info_t audio_info;    ///< audio information pass to audiodsp
     int packet_size;            ///< data size per packet
-    int avsync_threshold;       ///<for adec in ms>
-    void * adec_priv;           ///<for adec>
+    int avsync_threshold;    ///<for adec in ms>
+    void * adec_priv;          ///<for adec>
+    int SessionID;
+	int dspdec_not_supported;//check some profile that audiodsp decoder can not support,we switch to arm decoder
+	int switch_audio_flag;		//<switch audio flag switching(1) else(0)
 } codec_para_t;
 
-typedef struct
+typedef struct 
 {
-    signed char id;
+    signed char id;      
     unsigned char width;
     unsigned char height;
-    unsigned char type;
-} subtitle_info_t;
+	unsigned char type;    
+}subtitle_info_t;
 #define MAX_SUB_NUM			(32)
 
 #define IS_VALID_PID(t)     (t>=0 && t<=0x1fff)
@@ -95,10 +103,13 @@ typedef struct
 typedef struct {
     int sample_rate;         ///< audio stream sample rate
     int channels;            ///< audio stream channels
-    int format;              ///< codec format id
-    int handle;              ///< codec device handler
+    int format;            ///< codec format id
+    int handle;        ///< codec device handler
     int extradata_size;      ///< extra data size
     char extradata[AUDIO_EXTRA_DATA_SIZE];
+	int SessionID;
+	int dspdec_not_supported;//check some profile that audiodsp decoder can not support,we switch to arm decoder	
+	int droppcm_flag;				// drop pcm flag, if switch audio (1)
 } arm_audio_info;
 
 //audio decoder type, default arc

@@ -40,6 +40,7 @@ int set_black_policy(int blackout);
 int get_black_policy();
 int get_karaok_flag();
 int set_tsync_enable(int enable);
+int get_tsync_enable(void);
 int set_tsync_discontinue(int enable);
 int get_pts_discontinue();
 int set_fb0_blank(int blank);
@@ -61,8 +62,6 @@ int set_fb1_scale_height(int height);
 int check_audiodsp_fatal_err(void);
 int set_stb_source_hiu(void);
 int set_stb_demux_source_hiu(void);
-int get_stb_demux_source(char *strval, int size);
-int get_stb_source(char *strval, int size);
 
 int set_subtitle_enable(int num);
 int set_subtitle_curr(int num);
@@ -72,6 +71,8 @@ int check_file_same(char *filename2);
 int set_amutils_enable(int isOn);
 int set_amutils_cmd(const char* cmd);
 int get_amutils_cmd(char* cmd);
+int check_audio_output();
+
 
 #ifdef  __cplusplus
 }

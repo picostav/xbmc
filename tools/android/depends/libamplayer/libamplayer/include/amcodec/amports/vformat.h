@@ -85,6 +85,7 @@ typedef enum {
 #define CODEC_TAG_MP43      (0x3334504d)
 #define CODEC_TAG_M4S2      (0x3253344d)
 #define CODEC_TAG_DIV4      (0x34564944)
+#define CODEC_TAG_divx       (0x78766964)
 #define CODEC_TAG_DIVX      (0x58564944)
 #define CODEC_TAG_DIV5      (0x35564944)
 #define CODEC_TAG_DX50      (0x30355844)
@@ -108,5 +109,6 @@ typedef enum {
 #define CODEC_TAG_WVC1      (0x31435657)
 #define CODEC_TAG_WMVA      (0x41564d57)
 #define CODEC_TAG_FMP4      (0x34504d46)
+#define CODEC_TAG_FVFW      (0x57465646)
 
 #endif /* VFORMAT_H */

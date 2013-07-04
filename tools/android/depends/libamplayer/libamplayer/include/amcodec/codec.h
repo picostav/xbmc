@@ -86,8 +86,32 @@ int codec_set_sync_audio_discont(codec_para_t *pcodec, int discontinue);
 int codec_get_sync_audio_discont(codec_para_t *pcodec);
 int codec_set_sync_video_discont(codec_para_t *pcodec, int discontinue);
 int codec_get_sync_video_discont(codec_para_t *pcodec);
-
+unsigned long codec_get_sync_audio_discont_diff(codec_para_t *pcodec);
+unsigned long codec_get_sync_video_discont_diff(codec_para_t *pcodec);
+int codec_set_sync_audio_discont_diff(codec_para_t *pcodec, unsigned long discontinue_diff);
+int codec_set_sync_video_discont_diff(codec_para_t *pcodec, unsigned long discontinue_diff);
 int codec_get_sub_num(codec_para_t *pcodec);
 int codec_get_sub_info(codec_para_t *pcodec, subtitle_info_t *sub_info);
 
+int codec_set_av_threshold(codec_para_t *pcodec, int threshold);
+
+int codec_get_freerun_mode(codec_para_t *pcodec);
+int codec_set_freerun_mode(codec_para_t *pcodec, unsigned int mode);
+
+int codec_init_audio_utils(codec_para_t *pcodec);
+int codec_release_audio_utils(codec_para_t *pcodec);
+int codec_set_audio_resample_ena(codec_para_t *pcodec, unsigned long mode);
+int codec_get_audio_resample_ena(codec_para_t *pcodec);
+int codec_set_audio_resample_type(codec_para_t *pcodec, unsigned long type);
+
+int codec_set_video_delay_limited_ms(codec_para_t *pcodec,int delay_ms);
+int codec_get_video_delay_limited_ms(codec_para_t *pcodec,int *delay_ms);
+int codec_set_audio_delay_limited_ms(codec_para_t *pcodec,int delay_ms);
+int codec_get_audio_delay_limited_ms(codec_para_t *pcodec,int *delay_ms);
+int codec_get_audio_cur_delay_ms(codec_para_t *pcodec,int *delay_ms);
+int codec_get_video_cur_delay_ms(codec_para_t *pcodec,int *delay_ms);
+int codec_get_video_cur_bitrate(codec_para_t *pcodec,int *bitrate);
+int codec_get_audio_cur_bitrate(codec_para_t *pcodec,int *bitrate);
+
+int codec_set_vsync_upint(codec_para_t *pcodec, unsigned int mode);
 #endif
