@@ -27,6 +27,7 @@
 
 #include "utils/log.h"
 #include "utils/StringUtils.h"
+#include "utils/SystemInfo.h"
 
 int aml_set_sysfs_str(const char *path, const char *val)
 {
@@ -89,7 +90,13 @@ bool aml_present()
   if (has_aml == -1)
   {
     if (aml_get_sysfs_int("/sys/class/audiodsp/digital_raw") != -1)
+    {
       has_aml = 1;
+#if defined(TARGET_ANDROID)
+      CLog::Log(LOGDEBUG, "Manufacturer(%s), Product(%s), Model(%s)",
+        g_sysinfo.GetManufacturer().c_str(), g_sysinfo.GetProduct().c_str(), g_sysinfo.GetModel().c_str());
+#endif
+    }
     else
       has_aml = 0;
   }
@@ -98,6 +105,12 @@ bool aml_present()
 
 void aml_permissions()
 {
+#if defined(TARGET_ANDROID)
+  // gamestick, do not mess with cpufreq.
+  if (g_sysinfo.GetModel() == "GameStick V1.0")
+    return;
+#endif
+
   // most all aml devices are already rooted.
   int ret = system("ls /system/xbin/su");
   if (ret != 0)
@@ -189,6 +202,12 @@ void aml_cpufreq_min(bool limit)
 
 void aml_cpufreq_max(bool limit)
 {
+#if defined(TARGET_ANDROID)
+  // gamestick, do not mess with cpufreq.
+  if (g_sysinfo.GetModel() == "GameStick V1.0")
+    return;
+#endif
+
   if (!aml_wired_present() && aml_get_cputype() > 3)
   {
     // this is a MX Stick, they cannot substain 1GHz
