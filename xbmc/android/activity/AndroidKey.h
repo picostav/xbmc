@@ -1,6 +1,6 @@
 #pragma once
 /*
- *      Copyright (C) 2012 Team XBMC
+ *      Copyright (C) 2012-2013 Team XBMC
  *      http://www.xbmc.org
  *
  *  This Program is free software; you can redistribute it and/or modify
@@ -19,8 +19,11 @@
  *
  */
 
-#include <stdint.h>
 #include <android/input.h>
+
+#include <stdint.h>
+#include <string>
+#include <vector>
 
 typedef struct {
   int32_t nativeKey;
@@ -30,8 +33,10 @@ typedef struct {
 class CAndroidKey
 {
 public:
-  CAndroidKey(){};
-  ~CAndroidKey(){};
+  CAndroidKey() {};
+ ~CAndroidKey() {};
+
+  bool onKeyboardEvent(AInputEvent *event);
   void XBMC_Key(uint8_t code, uint16_t key, uint16_t modifiers, bool up);
-  bool onKeyboardEvent(AInputEvent* event);
+  void XBMC_JoyButton(uint8_t id, uint8_t button, bool up);
 };

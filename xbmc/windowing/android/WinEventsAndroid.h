@@ -24,20 +24,44 @@
 #define WINDOW_EVENTS_ANDROID_H
 
 #include "windowing/WinEvents.h"
+#include "threads/Timer.h"
+#include "threads/CriticalSection.h"
 #include "input/MouseStat.h"
 
-class CWinEventsAndroid : public CWinEventsBase
+#include <map>
+#include <string>
+#include <vector>
+
+typedef struct {
+  int32_t id;
+  std::string name;
+} APP_InputDevice;
+
+class CWinEventsAndroid : public CWinEventsBase, private ITimerCallback
 {
 public:
-  static void Init();
-  static void DeInit();
+  CWinEventsAndroid();
+  virtual ~CWinEventsAndroid();
+
+  static CWinEventsAndroid &Get();
+
   static void MessagePush(XBMC_Event *newEvent);
   static bool MessagePump();
 
-protected:
-  static int  GetQueueSize();
+private:
+  // implementation of ITimerCallback
+  virtual void OnTimeout();
+  void         HandleItemRepeat(XBMC_Event *event);
 
+  static CCriticalSection             m_inputCond;
+  static std::vector<XBMC_Event>      m_events;
+  static std::vector<APP_InputDevice> m_inputs_devices;
+  static std::map<int, std::map<int, XBMC_Event> > m_lastJoyAxisMap;
+  static std::map<int, std::map<int, XBMC_Event> > m_lastJoyButtonMap;
+
+  CCriticalSection                    m_holdCond;
+  int32_t                             m_holdTimeout;
+  CTimer                             *m_holdTimer;
 };
 
 #endif // WINDOW_EVENTS_ANDROID_H
-

@@ -1,6 +1,6 @@
 #pragma once
 /*
- *      Copyright (C) 2012 Team XBMC
+ *      Copyright (C) 2012-2013 Team XBMC
  *      http://www.xbmc.org
  *
  *  This Program is free software; you can redistribute it and/or modify
@@ -30,9 +30,12 @@
 #include "IInputHandler.h"
 
 #include "xbmc.h"
-
+#include "android/jni/Context.h"
+#include "android/jni/BroadcastReceiver.h"
+#include "threads/Event.h"
 
 // forward delares
+class CJNIWakeLock;
 class CAESinkAUDIOTRACK;
 typedef struct _JNIEnv JNIEnv;
 
@@ -50,16 +53,16 @@ struct androidPackage
 };
 
 
-class CXBMCApp : public IActivityHandler
+class CXBMCApp : public IActivityHandler, public CJNIContext, public CJNIBroadcastReceiver
 {
 public:
   CXBMCApp(ANativeActivity *nativeActivity);
   virtual ~CXBMCApp();
+  virtual void onReceive(CJNIIntent intent);
+  virtual void onNewIntent(CJNIIntent intent);
+  virtual void onSystemUiVisibilityChange(int visibility);
 
   bool isValid() { return m_activity != NULL; }
-
-  ActivityResult onActivate();
-  void onDeactivate();
 
   void onStart();
   void onResume();
@@ -78,12 +81,12 @@ public:
   void onLostFocus();
 
 
-  static ANativeWindow* GetNativeWindow() { return m_window; };
+  static const ANativeWindow** GetNativeWindow(int timeout);
   static int SetBuffersGeometry(int width, int height, int format);
   static int android_printf(const char *format, ...);
   
   static int GetBatteryLevel();
-  static bool StartActivity(const std::string &package);
+  static bool StartActivity(const std::string &package, const std::string &intent = std::string(), const std::string &dataType = std::string(), const std::string &dataURI = std::string());
   static bool ListApplications(std::vector <androidPackage> *applications);
   static bool GetIconSize(const std::string &packageName, int *width, int *height);
   static bool GetIcon(const std::string &packageName, void* buffer, unsigned int bufSize); 
@@ -99,60 +102,35 @@ public:
   static int GetMaxSystemVolume();
 
   static int GetDPI();
-protected:
-  // limit who can access AttachCurrentThread/DetachCurrentThread
-  friend class CAESinkAUDIOTRACK;
-  friend class CAndroidFeatures;
-  friend class CFileAndroidApp;
+  static bool WaitForNativeWindow(int timeout);
+  bool WaitForMedia(int timeout);
+  static bool IsLauncher() { return m_runAsLauncher;};
+  static void ShowStatusBar(bool show);
 
-  static int AttachCurrentThread(JNIEnv** p_env, void* thr_args = NULL);
-  static int DetachCurrentThread();
+protected:
+  // limit who can access Volume
+  friend class CAESinkAUDIOTRACK;
 
   static int GetMaxSystemVolume(JNIEnv *env);
   static void SetSystemVolume(JNIEnv *env, float percent);
 
 private:
   static bool HasLaunchIntent(const std::string &package);
-  bool getWakeLock(JNIEnv *env);
-  void acquireWakeLock();
-  void releaseWakeLock();
+  bool getWakeLock();
+  std::string GetFilenameFromIntent(const CJNIIntent &intent);
   void run();
   void stop();
-
+  void SetupEnv();
   static ANativeActivity *m_activity;
-  jobject m_wakeLock;
-  typedef enum {
-    // XBMC_Initialize hasn't been executed yet
-    Uninitialized,
-    // XBMC_Initialize has been successfully executed
-    Initialized,
-    // XBMC is currently rendering
-    Rendering,
-    // XBMC has stopped rendering because it has lost focus
-    // but it still has an EGLContext
-    Unfocused,
-    // XBMC has been paused/stopped and does not have an
-    // EGLContext
-    Paused,
-    // XBMC is being stopped
-    Stopping,
-    // XBMC has stopped
-    Stopped,
-    // An error has occured
-    Error
-  } AppState;
-
-  typedef struct {
-    pthread_t thread;
-    pthread_mutex_t mutex;
-    AppState appState;
-  } State;
-
-  State m_state;
-  
-  void setAppState(AppState state);
-    
+  CJNIWakeLock *m_wakeLock;
+  static int m_batteryLevel;  
+  bool m_firstrun;
+  bool m_exiting;
+  pthread_t m_thread;
+  CEvent m_mediaMounted;
   static ANativeWindow* m_window;
+  static CEvent m_windowCreated;
+  static bool m_runAsLauncher;
   
   void XBMC_Pause(bool pause);
   void XBMC_Stop();
