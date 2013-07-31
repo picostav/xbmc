@@ -44,6 +44,10 @@
 #endif
 #include "powermanagement/PowerManager.h"
 #include "utils/StringUtils.h"
+#include "utils/XMLUtils.h"
+#if defined(TARGET_ANDROID)
+#include "android/jni/Build.h"
+#endif
 
 CSysInfo g_sysinfo;
 
@@ -308,10 +312,37 @@ CStdString CSysInfo::GetCPUSerial()
   return "Serial: " + g_cpuInfo.getCPUSerial();
 }
 
+CStdString CSysInfo::GetManufacturer()
+{
+  CStdString manufacturer = "";
+#if defined(TARGET_ANDROID)
+  manufacturer = CJNIBuild::MANUFACTURER;
+#endif
+  return manufacturer;
+}
+
+CStdString CSysInfo::GetModel()
+{
+  CStdString model = "";
+#if defined(TARGET_ANDROID)
+  model = CJNIBuild::MODEL;
+#endif
+  return model;
+}
+
+CStdString CSysInfo::GetProduct()
+{
+  CStdString product = "";
+#if defined(TARGET_ANDROID)
+  product = CJNIBuild::PRODUCT;
+#endif
+  return product;
+}
+
 bool CSysInfo::IsAeroDisabled()
 {
-#ifdef _WIN32
-  if (IsVistaOrHigher())
+#ifdef TARGET_WINDOWS
+  if (IsWindowsVersionAtLeast(CSysInfo::WindowsVersionVista))
   {
     BOOL aeroEnabled = FALSE;
     HRESULT res = DwmIsCompositionEnabled(&aeroEnabled);
