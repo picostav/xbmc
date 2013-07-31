@@ -23,15 +23,13 @@
 #include <stdexcept>
 #include "utils/log.h"
 
-#ifdef _LINUX
-#if !defined(TARGET_DARWIN)
+#if defined(HAS_AVAHI)
 #include "linux/ZeroconfBrowserAvahi.h"
-#else
+#elif defined(TARGET_DARWIN)
 //on osx use the native implementation
 #include "osx/ZeroconfBrowserOSX.h"
-#endif
-#elif defined(TARGET_WINDOWS)
-#include "windows/ZeroconfBrowserWIN.h"
+#elif defined(HAS_MDNS)
+#include "mdns/ZeroconfBrowserMDNS.h"
 #endif
 
 #include "threads/CriticalSection.h"
@@ -159,10 +157,10 @@ CZeroconfBrowser*  CZeroconfBrowser::GetInstance()
 #else
 #if defined(TARGET_DARWIN)
       smp_instance = new CZeroconfBrowserOSX;
-#elif defined(_LINUX)
+#elif defined(HAS_AVAHI)
       smp_instance  = new CZeroconfBrowserAvahi;
-#elif defined(TARGET_WINDOWS)
-      smp_instance  = new CZeroconfBrowserWIN;
+#elif defined(HAS_MDNS)
+      smp_instance  = new CZeroconfBrowserMDNS;
 #endif
 #endif
     }
@@ -207,6 +205,11 @@ void CZeroconfBrowser::ZeroconfService::SetType(const CStdString& fcr_type)
 void CZeroconfBrowser::ZeroconfService::SetDomain(const CStdString& fcr_domain)
 {
   m_domain = fcr_domain;
+}
+
+void CZeroconfBrowser::ZeroconfService::SetHostname(const CStdString& fcr_hostname)
+{
+  m_hostname = fcr_hostname;
 }
 
 void CZeroconfBrowser::ZeroconfService::SetIP(const CStdString& fcr_ip)

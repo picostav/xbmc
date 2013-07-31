@@ -86,6 +86,12 @@
   #define HAS_UPNP
 #endif
 
+#if defined(HAVE_LIBMDNSEMBEDDED)
+  #define HAS_ZEROCONF
+  #define HAS_MDNS
+  #define HAS_MDNS_EMBEDDED
+#endif
+
 /**********************
  * Non-free Components
  **********************/
@@ -119,6 +125,7 @@
 #define HAS_FILESYSTEM_SMB
 #define HAS_FILESYSTEM_NFS
 #define HAS_ZEROCONF
+#define HAS_MDNS
 #define HAS_AIRPLAY
 #define HAS_AIRTUNES
 #define HAVE_LIBCEC
