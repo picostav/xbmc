@@ -49,7 +49,7 @@ static KeyMap keyMap[] = {
   { AKEYCODE_DPAD_DOWN       , XBMCK_DOWN },  // also matches keyboard down
   { AKEYCODE_DPAD_LEFT       , XBMCK_LEFT },  // also matches keyboard left
   { AKEYCODE_DPAD_RIGHT      , XBMCK_RIGHT }, // also matches keyboard right
-  { AKEYCODE_DPAD_CENTER     , XBMCK_LAST },
+  { AKEYCODE_DPAD_CENTER     , XBMCK_RETURN },
   { AKEYCODE_VOLUME_UP       , XBMCK_PLUS },
   { AKEYCODE_VOLUME_DOWN     , XBMCK_MINUS },
   { AKEYCODE_POWER           , XBMCK_POWER },
@@ -135,7 +135,7 @@ static KeyMap keyMap[] = {
   { AKEYCODE_BUTTON_THUMBL   , XBMCK_LAST },
   { AKEYCODE_BUTTON_THUMBR   , XBMCK_LAST },
   { AKEYCODE_BUTTON_START    , XBMCK_LAST },
-  { AKEYCODE_BUTTON_SELECT   , XBMCK_RETURN },
+  { AKEYCODE_BUTTON_SELECT   , XBMCK_LAST },
   { AKEYCODE_BUTTON_MODE     , XBMCK_LAST },
   { AKEYCODE_ESCAPE          , XBMCK_ESCAPE },
   { AKEYCODE_FORWARD_DEL     , XBMCK_DELETE }
@@ -180,12 +180,18 @@ bool CAndroidKey::onKeyboardEvent(AInputEvent *event)
       break;
     }
   }
-  CXBMCApp::android_printf("CAndroidKey::onKeyboardEvent:"
-    "keycode(%d), sym(%u), action(%u)", keycode, sym, action);
+  //CXBMCApp::android_printf("CAndroidKey::onKeyboardEvent:"
+  //  "keycode(%d), sym(%u), action(%u)", keycode, sym, action);
 
-  // check if this is a key we don't want to handle
-  if (sym == XBMCK_LAST)
+  // watch this check, others might be different.
+  // AML IR Controller is    AINPUT_SOURCE_GAMEPAD | AINPUT_SOURCE_KEYBOARD | AINPUT_SOURCE_DPAD
+  // Gamestick Controller is AINPUT_SOURCE_GAMEPAD | AINPUT_SOURCE_KEYBOARD
+  // we want to accept Gamestick Controller, reject AML IR Controller.
+  if (AInputEvent_getSource(event) == (AINPUT_SOURCE_GAMEPAD | AINPUT_SOURCE_KEYBOARD))
   {
+    // GamePad events are also AINPUT_EVENT_TYPE_KEY events,
+    // trap them here and revector valid ones as JoyButtons
+    // so we get keymap handling.
     switch (keycode)
     {
       // revector these as JoyButtons so we get keymap handling
@@ -203,8 +209,9 @@ bool CAndroidKey::onKeyboardEvent(AInputEvent *event)
       case AKEYCODE_BUTTON_THUMBR:
       case AKEYCODE_BUTTON_START:
         {
+          // ignore up and other events.
           if (action != AKEY_EVENT_ACTION_DOWN)
-          return false;
+            return false;
 
           for (size_t i = 0; i < sizeof(JoyButtonMap) / sizeof(KeyMap); i++)
           {
@@ -218,10 +225,14 @@ bool CAndroidKey::onKeyboardEvent(AInputEvent *event)
         }
         break;
       default:
-        return false;
+        // let the standard key handler have these
         break;
     }
   }
+
+  // check if this is a key we don't want to handle
+  if (sym == XBMCK_LAST)
+    return false;
 
   uint16_t modifiers = 0;
   if (state & AMETA_ALT_LEFT_ON)

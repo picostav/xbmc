@@ -20,6 +20,7 @@
 
 #include "EventLoop.h"
 #include "XBMCApp.h"
+#include "AndroidExtra.h"
 
 CEventLoop::CEventLoop(android_app* application)
   : m_enabled(false),
@@ -155,7 +156,7 @@ int32_t CEventLoop::processInput(AInputEvent* event)
           rtn = m_inputHandler->onMouseEvent(event);
           break;
         case AINPUT_SOURCE_TOUCHPAD:
-        case 0x1000010:
+        case AINPUT_SOURCE_JOYSTICK:
           rtn = m_inputHandler->onPositionEvent(event);
           break;
       }

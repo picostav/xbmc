@@ -24,3 +24,9 @@
  //Additional defines from android.view.KeyEvent (http://developer.android.com/reference/android/view/KeyEvent.html)
 #define AKEYCODE_ESCAPE 111
 #define AKEYCODE_FORWARD_DEL 112
+
+
+#define AINPUT_SOURCE_CLASS_JOYSTICK 0x00000010
+
+#define AINPUT_SOURCE_GAMEPAD  (0x00000400 | AINPUT_SOURCE_CLASS_BUTTON)
+#define AINPUT_SOURCE_JOYSTICK (0x01000000 | AINPUT_SOURCE_CLASS_JOYSTICK)
