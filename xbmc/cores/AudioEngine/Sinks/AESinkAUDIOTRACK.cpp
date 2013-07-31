@@ -27,7 +27,7 @@
 #include "utils/AMLUtils.h"
 #endif
 
-#include <jni.h>
+#include "android/jni/JNIThreading.h"
 
 #if defined(__ARM_NEON__)
 #include <arm_neon.h>
@@ -284,8 +284,7 @@ void CAESinkAUDIOTRACK::Process()
 {
   CLog::Log(LOGDEBUG, "CAESinkAUDIOTRACK::Process");
 
-  JNIEnv *jenv = NULL;
-  CXBMCApp::AttachCurrentThread(&jenv, NULL);
+  JNIEnv *jenv = xbmc_jnienv();
 
   jclass jcAudioTrack = jenv->FindClass("android/media/AudioTrack");
 
@@ -425,5 +424,4 @@ void CAESinkAUDIOTRACK::Process()
   jenv->DeleteLocalRef(joAudioTrack);
   jenv->DeleteLocalRef(jcAudioTrack);
 
-  CXBMCApp::DetachCurrentThread();
 }

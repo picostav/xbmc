@@ -995,6 +995,7 @@ if test "$target_platform" = "target_android" ; then
   #android hack for static python. Required to maintain correct linking order.
   AC_CHECK_LIB([python$PYTHON_VERSION],      [main],, AC_MSG_ERROR($missing_library))
   AC_CHECK_LIB([android],     [main],, AC_MSG_ERROR($missing_library))
+  AC_CHECK_LIB([jnigraphics],     [main],, AC_MSG_ERROR($missing_library))
 fi
 PKG_CHECK_MODULES([FRIBIDI],    [fribidi],
   [INCLUDES="$INCLUDES $FRIBIDI_CFLAGS"; LIBS="$LIBS $FRIBIDI_LIBS"],
@@ -2396,6 +2397,7 @@ OUTPUT_FILES="Makefile \
     xbmc/peripherals/devices/Makefile \
     xbmc/android/activity/Makefile \
     xbmc/android/loader/Makefile \
+    xbmc/android/jni/Makefile \
     xbmc/main/Makefile \
     xbmc/utils/Makefile"
 

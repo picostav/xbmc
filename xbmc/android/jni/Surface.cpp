@@ -20,7 +20,7 @@
 
 #include "JNIBase.h"
 #include "Surface.h"
-#include "SurfaceTexture.cpp"
+#include "SurfaceTexture.h"
 
 #include "jutils/jutils-details.hpp"
 

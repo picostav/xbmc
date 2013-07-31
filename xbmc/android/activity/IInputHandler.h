@@ -22,11 +22,12 @@
 #include "AndroidTouch.h"
 #include "AndroidKey.h"
 #include "AndroidMouse.h"
+#include "AndroidPosition.h"
 
-class IInputHandler : public CAndroidTouch, public CAndroidKey, public CAndroidMouse
+class IInputHandler : public CAndroidTouch, public CAndroidKey, public CAndroidMouse, public CAndroidPosition
 {
 public:
-  IInputHandler() : CAndroidTouch(), CAndroidKey(), CAndroidMouse() {}
+  IInputHandler() : CAndroidTouch(), CAndroidKey(), CAndroidMouse(), CAndroidPosition() {}
 
   virtual void setDPI(uint32_t dpi) { CAndroidTouch::setDPI(dpi); }
 };

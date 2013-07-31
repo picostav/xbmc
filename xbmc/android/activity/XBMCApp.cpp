@@ -45,7 +45,7 @@
 #include "utils/log.h"
 #include "ApplicationMessenger.h"
 #include "utils/StringUtils.h"
-#include "AppParamParser.h"
+#include "settings/AppParamParser.h"
 #include <android/bitmap.h>
 #include "AndroidFeatures.h"
 #include "android/jni/JNIThreading.h"
