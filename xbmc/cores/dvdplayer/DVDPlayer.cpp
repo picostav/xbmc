@@ -1105,9 +1105,9 @@ void CDVDPlayer::Process()
       continue;
     }
 
-    // always yield to players if they have data levels > 50 percent
-    if((m_dvdPlayerAudio.GetLevel() > 50 || m_CurrentAudio.id < 0)
-    && (m_dvdPlayerVideo.GetLevel() > 50 || m_CurrentVideo.id < 0))
+    // always yield to players if they have data levels > 75 percent
+    if((m_dvdPlayerAudio.GetLevel() > 75 || m_CurrentAudio.id < 0)
+    && (m_dvdPlayerVideo.GetLevel() > 75 || m_CurrentVideo.id < 0))
       Sleep(0);
 
     DemuxPacket* pPacket = NULL;
@@ -4110,6 +4110,8 @@ bool CDVDPlayer::SwitchChannel(const CPVRChannel &channel)
 
 bool CDVDPlayer::CachePVRStream(void) const
 {
+  return true;
+
   return m_pInputStream->IsStreamType(DVDSTREAM_TYPE_PVRMANAGER) &&
       !g_PVRManager.IsPlayingRecording() &&
       g_advancedSettings.m_bPVRCacheInDvdPlayer;
