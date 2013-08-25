@@ -445,25 +445,24 @@ bool CDVDDemuxFFmpeg::Open(CDVDInputStream* pInput)
   if (iformat && (strcmp(iformat->name, "mjpeg") == 0) && m_ioContext->seekable == 0)
     m_pFormatContext->max_analyze_duration = 500000;
 
-  if (strncmp(m_pFormatContext->iformat->name, "mpegts", 6) == 0)
-  {
-    m_pFormatContext->max_analyze_duration = 2500000;
-    m_pFormatContext->probesize = 2500000;
-  }
-
   // we need to know if this is matroska or avi later
   m_bMatroska = strncmp(m_pFormatContext->iformat->name, "matroska", 8) == 0;	// for "matroska.webm"
   m_bAVI = strcmp(m_pFormatContext->iformat->name, "avi") == 0;
 
-  if (strncmp(m_pFormatContext->iformat->name, "mpegts", 6) == 0 && strncmp(m_pFormatContext->filename, "udp", 3) == 0)
+  // Fast udp/mpegts startup and channel switching.
+  // Set streaminfo false and skip avformat_find_stream_info (slow)
+  // as it takes 5-10 seconds, see CDVDDemuxFFmpeg::Read().
+  if (strncmp(m_pFormatContext->iformat->name, "mpegts", 6) == 0 &&
+      strncmp(m_pFormatContext->filename, "udp", 3) == 0)
+  {
     streaminfo = false;
+  }
 
   if (streaminfo)
   {
     /* too speed up dvd switches, only analyse very short */
     if(m_pInput->IsStreamType(DVDSTREAM_TYPE_DVD))
       m_pFormatContext->max_analyze_duration = 500000;
-
 
     CLog::Log(LOGDEBUG, "%s - avformat_find_stream_info starting", __FUNCTION__);
     int iErr = m_dllAvFormat.avformat_find_stream_info(m_pFormatContext, NULL);
@@ -653,6 +652,7 @@ AVDictionary *CDVDDemuxFFmpeg::GetFFMpegOptionsFromURL(const CURL &url)
     if (!headers.empty())
       m_dllAvUtil.av_dict_set(&options, "headers", headers.c_str(), 0);
   }
+/*
   else if (protocol.Equals("udp"))
   {
     std::map<CStdString, CStdString> protocolOptions;
@@ -695,7 +695,7 @@ AVDictionary *CDVDDemuxFFmpeg::GetFFMpegOptionsFromURL(const CURL &url)
     m_dllAvUtil.av_dict_set(&options, "buffer_size", buffer_size.c_str(), 0);
 
   }
-
+*/
   return options;
 }
 
@@ -775,15 +775,23 @@ DemuxPacket* CDVDDemuxFFmpeg::Read()
       AVStream *stream = m_pFormatContext->streams[pkt.stream_index];
 
       AVStream *st = m_pFormatContext->streams[pkt.stream_index];
+      // Fast udp/mpegts startup and channel switching.
+      // Set streaminfo false and skip avformat_find_stream_info (slow)
+      // But we need a proper codec extradata so fill it in for ffmpeg.
       if(st->parser && st->parser->parser->split && !st->codec->extradata)
       {
           int i= st->parser->parser->split(st->codec, pkt.data, pkt.size);
           if (i > 0 && i < FF_MAX_EXTRADATA_SIZE)
           {
+              // Found extradata, fill it in, this will cause
+              // a new stream to be created and used. Watch out in
+              // codecs as there will be a double open, the 1st time,
+              // hints will be bogus, the 2nd time is the new stream.
               st->codec->extradata_size= i;
               st->codec->extradata= (uint8_t*)m_dllAvUtil.av_malloc(st->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
               if (st->codec->extradata)
               {
+                  CLog::Log(LOGNOTICE, "CDVDDemuxFFmpeg::Read() fetching extradata, extradata_size(%d)", st->codec->extradata_size);
                   memcpy(st->codec->extradata, pkt.data, st->codec->extradata_size);
                   memset(st->codec->extradata + i, 0, FF_INPUT_BUFFER_PADDING_SIZE);
 
@@ -796,18 +804,22 @@ DemuxPacket* CDVDDemuxFFmpeg::Read()
                       m_dllAvCodec.avcodec_open2(st->codec, codec, &thread_opt);
                       m_dllAvUtil.av_dict_free(&thread_opt);
 
+                      // This seems suspect, we assume that the key_frame
+                      // will be contained in this ffmpeg pkt of demux data,
+                      // seems we should fetch and decode until we hit a key_frame.
+                      // Yet if we comment it out, this game stops working...
                       AVFrame picture;
-                      int got_picture;
+                      int rtn, got_picture = 0;
                       memset(&picture, 0, sizeof(AVFrame));
                       picture.pts = picture.pkt_dts = picture.pkt_pts = picture.best_effort_timestamp = AV_NOPTS_VALUE;
                       picture.pkt_pos = -1;
                       picture.key_frame= 1;
-        //              picture.sample_aspect_ratio = (AVRational){0, 1};
+                    //picture.sample_aspect_ratio = (AVRational){0, 1};
                       picture.format = -1;
-                      m_dllAvCodec.avcodec_decode_video2(st->codec, &picture,
-                                                       &got_picture, &pkt);
+                      rtn = m_dllAvCodec.avcodec_decode_video2(st->codec, &picture, &got_picture, &pkt);
                       m_dllAvCodec.avcodec_close(st->codec);
                       st->parser->flags = 0;
+                      CLog::Log(LOGNOTICE, "CDVDDemuxFFmpeg::Read() rtn(%d), got_picture(%d)", rtn, got_picture);
                   }
               }
           }
@@ -1106,8 +1118,8 @@ void CDVDDemuxFFmpeg::AddStream(int iId)
         else
           st->bVFR = false;
 
-        // never trust pts in avi files
-        if (m_bAVI)
+        // never trust pts in avi files with h264.
+        if (m_bAVI && pStream->codec->codec_id == CODEC_ID_H264)
           st->bPTSInvalid = true;
 
         //average fps is more accurate for mkv files
