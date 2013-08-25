@@ -1,6 +1,6 @@
 /*
- *      Copyright (C) 2010-2012 Team XBMC
- *      http://www.xbmc.org
+ *      Copyright (C) 2010-2013 Team XBMC
+ *      http://xbmc.org
  *
  *  This Program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@
 #endif
 
 #include "BitstreamConverter.h"
+#include "cores/dvdplayer/DVDClock.h"
 
 enum {
     NAL_SLICE=1,
@@ -40,6 +41,8 @@ enum {
     NAL_SPS_EXT,
     NAL_AUXILIARY_SLICE=19
 };
+
+#define FF_MAX_EXTRADATA_SIZE ((1 << 28) - FF_INPUT_BUFFER_PADDING_SIZE)
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////
@@ -177,6 +180,12 @@ static const uint8_t* avc_find_startcode(const uint8_t *p, const uint8_t *end)
 ////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////
 CBitstreamParser::CBitstreamParser()
+ : m_dllAvCodec(NULL)
+ , m_parser(NULL)
+ , m_context(NULL)
+ , m_parser_split(false)
+ , m_extradata(NULL)
+ , m_extrasize(0)
 {
 }
 
@@ -185,43 +194,41 @@ CBitstreamParser::~CBitstreamParser()
   Close();
 }
 
-bool CBitstreamParser::Open()
+bool CBitstreamParser::Open(enum CodecID codec_id)
 {
+  m_dllAvCodec = new DllAvCodec;
+  if (!m_dllAvCodec->Load())
+  {
+    delete m_dllAvCodec, m_dllAvCodec = NULL;
+    return false;
+  }
+
+  m_dllAvCodec->avcodec_register_all();
+
+  m_parser = m_dllAvCodec->av_parser_init(codec_id);
+  if (m_parser)
+    m_parser->flags |= PARSER_FLAG_COMPLETE_FRAMES;
+
+  AVCodec *codec = m_dllAvCodec->avcodec_find_decoder(codec_id);
+  m_context = m_dllAvCodec->avcodec_alloc_context3(codec);
+  m_context->time_base.num = 1;
+  m_context->time_base.den = DVD_TIME_BASE;
+
+  m_parser_split = true;
+
   return true;
 }
 
 void CBitstreamParser::Close()
 {
-}
-
-const uint8_t* CBitstreamParser::find_start_code(const uint8_t *p,
-  const uint8_t *end, uint32_t *state)
-{
-  assert(p <= end);
-  if (p >= end)
-    return end;
-
-  for (int i = 0; i < 3; i++) {
-    uint32_t tmp = *state << 8;
-    *state = tmp + *(p++);
-    if (tmp == 0x100 || p == end)
-      return p;
-  }
-
-  while (p < end) {
-    if      (p[-1] > 1      ) p += 3;
-    else if (p[-2]          ) p += 2;
-    else if (p[-3]|(p[-1]-1)) p++;
-    else {
-      p++;
-      break;
-    }
-  }
-
-  p = FFMIN(p, end) - 4;
-  *state = BS_RB32(p);
-
-  return p + 4;
+  if (m_extradata)
+    delete[] (uint8_t*)m_extradata;
+  if (m_parser)
+    m_dllAvCodec->av_parser_close(m_parser), m_parser = NULL;
+  if (m_context)
+    m_dllAvCodec->avcodec_close(m_context), m_context = NULL;
+  if (m_dllAvCodec)
+    delete m_dllAvCodec, m_dllAvCodec = NULL;
 }
 
 bool CBitstreamParser::FindIdrSlice(const uint8_t *buf, int buf_size)
@@ -270,6 +277,73 @@ bool CBitstreamParser::FindIdrSlice(const uint8_t *buf, int buf_size)
   }
 
   return rtn;
+}
+
+uint8_t* CBitstreamParser::FindExtraData(const uint8_t *buf, int buf_size, double dts, double pts, int *extrasize)
+{
+  if (!buf)
+    return 0;
+
+  if (!m_parser_split)
+    return 0;
+
+  m_extrasize = m_parser->parser->split(m_context, buf, buf_size);
+  if (m_extrasize > 0 && m_extrasize < FF_MAX_EXTRADATA_SIZE)
+  {
+    if (m_extradata)
+      delete[] (uint8_t*)m_extradata;
+    m_extradata = new uint8_t[m_extrasize + FF_INPUT_BUFFER_PADDING_SIZE];
+    memcpy(m_extradata, buf, m_extrasize);
+    memset(m_extradata + m_extrasize, 0x00 , FF_INPUT_BUFFER_PADDING_SIZE);
+    m_parser_split = false;
+  }
+/*
+  uint8_t *outbuf = NULL;
+  int      outbuf_size = 0;
+  int len = m_dllAvCodec->av_parser_parse2(
+    m_parser, m_context, &outbuf, &outbuf_size, buf, buf_size,
+    (int64_t)(pts * DVD_TIME_BASE), (int64_t)(dts * DVD_TIME_BASE), 0);
+
+  m_context->codec_id;
+  m_context->codec_tag;
+  m_context->width;
+  m_context->height;
+  m_context->bits_per_coded_sample;
+  m_context->profile;
+  m_context->level;
+*/
+  *extrasize = m_extrasize;
+  return m_extradata;
+}
+
+const uint8_t* CBitstreamParser::find_start_code(const uint8_t *p,
+  const uint8_t *end, uint32_t *state)
+{
+  assert(p <= end);
+  if (p >= end)
+    return end;
+
+  for (int i = 0; i < 3; i++) {
+    uint32_t tmp = *state << 8;
+    *state = tmp + *(p++);
+    if (tmp == 0x100 || p == end)
+      return p;
+  }
+
+  while (p < end) {
+    if      (p[-1] > 1      ) p += 3;
+    else if (p[-2]          ) p += 2;
+    else if (p[-3]|(p[-1]-1)) p++;
+    else {
+      p++;
+      break;
+    }
+  }
+
+  p = FFMIN(p, end) - 4;
+  *state = BS_RB32(p);
+
+  return p + 4;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -328,6 +402,10 @@ bool CBitstreamConverter::Open(enum CodecID codec, uint8_t *in_extradata, int in
       }
       else
       {
+        m_dllAvUtil = new DllAvUtil;
+        if (!m_dllAvUtil->Load())
+            return false;
+
         // valid avcC atom data always starts with the value 1 (version)
         if ( in_extradata[0] != 1 )
         {
@@ -337,9 +415,8 @@ bool CBitstreamConverter::Open(enum CodecID codec, uint8_t *in_extradata, int in
             CLog::Log(LOGINFO, "CBitstreamConverter::Open annexb to bitstream init");
             // video content is from x264 or from bytestream h264 (AnnexB format)
             // NAL reformating to bitstream format needed
-            m_dllAvUtil = new DllAvUtil;
             m_dllAvFormat = new DllAvFormat;
-            if (!m_dllAvUtil->Load() || !m_dllAvFormat->Load())
+            if (!m_dllAvFormat->Load())
               return false;
 
             AVIOContext *pb;
@@ -373,9 +450,8 @@ bool CBitstreamConverter::Open(enum CodecID codec, uint8_t *in_extradata, int in
             CLog::Log(LOGINFO, "CBitstreamConverter::Open annexb to bitstream init 3 byte to 4 byte nal");
             // video content is from so silly encoder that think 3 byte NAL sizes
             // are valid, setup to convert 3 byte NAL sizes to 4 byte.
-            m_dllAvUtil = new DllAvUtil;
             m_dllAvFormat = new DllAvFormat;
-            if (!m_dllAvUtil->Load() || !m_dllAvFormat->Load())
+            if (!m_dllAvFormat->Load())
               return false;
 
             in_extradata[4] = 0xFF;
@@ -387,6 +463,11 @@ bool CBitstreamConverter::Open(enum CodecID codec, uint8_t *in_extradata, int in
             return true;
           }
         }
+        // valid avcC atom 
+        m_extradata = (uint8_t*)m_dllAvUtil->av_malloc(in_extrasize);
+        memcpy(m_extradata, in_extradata, in_extrasize);
+        m_extrasize = in_extrasize;
+        return true;
       }
       return false;
       break;
@@ -484,7 +565,7 @@ bool CBitstreamConverter::Convert(uint8_t *pData, int iSize)
 
           // convert demuxer packet from bytestream (AnnexB) to bitstream
           AVIOContext *pb;
-  
+
           if(m_dllAvFormat->avio_open_dyn_buf(&pb) < 0)
           {
             return false;
@@ -517,7 +598,7 @@ bool CBitstreamConverter::Convert(uint8_t *pData, int iSize)
             m_dllAvFormat->avio_write(pb, nal_start, nal_size);
             nal_start += nal_size;
           }
-  
+
           m_convertSize = m_dllAvFormat->avio_close_dyn_buf(pb, &m_convertBuffer);
         }
         return true;
@@ -542,7 +623,7 @@ int CBitstreamConverter::GetConvertSize()
   if((m_convert_bitstream || m_convert_bytestream || m_convert_3byteTo4byteNALSize) && m_convertBuffer != NULL)
     return m_convertSize;
   else
-    return m_inputSize; 
+    return m_inputSize;
 }
 
 uint8_t *CBitstreamConverter::GetExtraData()
@@ -904,11 +985,11 @@ bool CBitstreamConverter::mpeg2_sequence_header(const uint8_t *data, const uint3
       nal_bs_init(&bs, nal_start, end - nal_start);
 
       // sequence_header_code
-      nal_bs_read(&bs, 8);  
+      nal_bs_read(&bs, 8);
 
       // width
       // nal_start + 12 bits == horizontal_size_value
-      uint32_t width = nal_bs_read(&bs, 12);  
+      uint32_t width = nal_bs_read(&bs, 12);
       if (width != sequence->width)
       {
         changed = true;

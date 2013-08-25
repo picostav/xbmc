@@ -1,6 +1,6 @@
 /*
- *      Copyright (C) 2010-2012 Team XBMC
- *      http://www.xbmc.org
+ *      Copyright (C) 2010-2013 Team XBMC
+ *      http://xbmc.org
  *
  *  This Program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -113,20 +113,32 @@ typedef struct
   int frame_crop_bottom_offset;
 } sps_info_struct;
 
+////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////
 class CBitstreamParser
 {
 public:
   CBitstreamParser();
   ~CBitstreamParser();
 
-  bool              Open();
-  void              Close();
-  bool              FindIdrSlice(const uint8_t *buf, int buf_size);
+  bool                 Open(enum CodecID codec_id);
+  void                 Close();
+  bool                 FindIdrSlice(const uint8_t *buf, int buf_size);
+  uint8_t*             FindExtraData(const uint8_t *buf, int buf_size, double dts, double pts, int *extrasize);
 
 protected:
-  const uint8_t*    find_start_code(const uint8_t *p, const uint8_t *end, uint32_t *state);
+  const uint8_t*       find_start_code(const uint8_t *p, const uint8_t *end, uint32_t *state);
+
+  DllAvCodec           *m_dllAvCodec;
+  AVCodecParserContext *m_parser;
+  AVCodecContext       *m_context;
+  bool                  m_parser_split;
+  uint8_t              *m_extradata;
+  int                   m_extrasize;
 };
 
+////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////
 class CBitstreamConverter
 {
 public:
@@ -137,9 +149,9 @@ public:
   void              Close(void);
   bool              NeedConvert(void) { return m_convert_bitstream; };
   bool              Convert(uint8_t *pData, int iSize);
-  uint8_t          *GetConvertBuffer(void);
+  uint8_t*          GetConvertBuffer(void);
   int               GetConvertSize();
-  uint8_t          *GetExtraData(void);
+  uint8_t*          GetExtraData(void);
   int               GetExtraSize();
 
   static void       bits_reader_set( bits_reader_t *br, uint8_t *buf, int len );
@@ -167,9 +179,9 @@ protected:
       uint32_t size;
   } omx_bitstream_ctx;
 
-  uint8_t           *m_convertBuffer;
+  uint8_t          *m_convertBuffer;
   int               m_convertSize;
-  uint8_t           *m_inputBuffer;
+  uint8_t          *m_inputBuffer;
   int               m_inputSize;
 
   uint32_t          m_sps_pps_size;
@@ -177,12 +189,12 @@ protected:
   bool              m_convert_bitstream;
   bool              m_to_annexb;
 
-  uint8_t           *m_extradata;
+  uint8_t          *m_extradata;
   int               m_extrasize;
   bool              m_convert_3byteTo4byteNALSize;
   bool              m_convert_bytestream;
-  DllAvUtil         *m_dllAvUtil;
-  DllAvFormat       *m_dllAvFormat;
+  DllAvUtil        *m_dllAvUtil;
+  DllAvFormat      *m_dllAvFormat;
   CodecID           m_codec;
 };
 
