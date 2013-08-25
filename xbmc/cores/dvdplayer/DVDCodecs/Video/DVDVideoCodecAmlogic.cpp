@@ -177,8 +177,8 @@ bool CDVDVideoCodecAmlogic::Open(CDVDStreamInfo &hints, CDVDCodecOptions &option
     {
       if (CJobManager::GetInstance().IsProcessing(kJobTypeMediaFlags) > 0)
       {
-        Sleep(100);
-        timeout_ms -= 100;
+        Sleep(20);
+        timeout_ms -= 20;
       }
       else
         break;
@@ -212,6 +212,17 @@ int CDVDVideoCodecAmlogic::Decode(uint8_t *pData, int iSize, double dts, double 
 {
   // Handle Input, add demuxer packet to input queue, we must accept it or
   // it will be discarded as DVDPlayerVideo has no concept of "try again".
+
+  // This is a special case for fast upd/mpegts startup.
+  // m_hints contents are bogus and we are waiting for CDVDDemuxFFmpeg::Read
+  // to parse extradata, and setup a new stream. until this happens,
+  // pretend we are open and eat demux packets.
+  if (!m_hints.width && !m_hints.height)
+  {
+    Sleep(30);
+    return VC_BUFFER;
+  }
+
   if (pData)
   {
     if (m_bitstream)
