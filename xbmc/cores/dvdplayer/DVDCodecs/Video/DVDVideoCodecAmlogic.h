@@ -68,6 +68,5 @@ protected:
   mpeg2_sequence *m_mpeg2_sequence;
   double          m_mpeg2_sequence_pts;
 
-  CBitstreamParser *m_parser;
   CBitstreamConverter *m_bitstream;
 };
