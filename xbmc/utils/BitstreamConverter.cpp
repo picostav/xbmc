@@ -23,6 +23,7 @@
 #endif
 
 #include "BitstreamConverter.h"
+#include "cores/dvdplayer/DVDClock.h"
 
 enum {
     NAL_SLICE=1,
@@ -40,6 +41,8 @@ enum {
     NAL_SPS_EXT,
     NAL_AUXILIARY_SLICE=19
 };
+
+#define FF_MAX_EXTRADATA_SIZE ((1 << 28) - FF_INPUT_BUFFER_PADDING_SIZE)
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////
@@ -177,6 +180,12 @@ static const uint8_t* avc_find_startcode(const uint8_t *p, const uint8_t *end)
 ////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////
 CBitstreamParser::CBitstreamParser()
+ : m_dllAvCodec(NULL)
+ , m_parser(NULL)
+ , m_context(NULL)
+ , m_parser_split(false)
+ , m_extradata(NULL)
+ , m_extrasize(0)
 {
 }
 
@@ -185,43 +194,41 @@ CBitstreamParser::~CBitstreamParser()
   Close();
 }
 
-bool CBitstreamParser::Open()
+bool CBitstreamParser::Open(enum CodecID codec_id)
 {
+  m_dllAvCodec = new DllAvCodec;
+  if (!m_dllAvCodec->Load())
+  {
+    delete m_dllAvCodec, m_dllAvCodec = NULL;
+    return false;
+  }
+
+  m_dllAvCodec->avcodec_register_all();
+
+  m_parser = m_dllAvCodec->av_parser_init(codec_id);
+  if (m_parser)
+    m_parser->flags |= PARSER_FLAG_COMPLETE_FRAMES;
+
+  AVCodec *codec = m_dllAvCodec->avcodec_find_decoder(codec_id);
+  m_context = m_dllAvCodec->avcodec_alloc_context3(codec);
+  m_context->time_base.num = 1;
+  m_context->time_base.den = DVD_TIME_BASE;
+
+  m_parser_split = true;
+
   return true;
 }
 
 void CBitstreamParser::Close()
 {
-}
-
-const uint8_t* CBitstreamParser::find_start_code(const uint8_t *p,
-  const uint8_t *end, uint32_t *state)
-{
-  assert(p <= end);
-  if (p >= end)
-    return end;
-
-  for (int i = 0; i < 3; i++) {
-    uint32_t tmp = *state << 8;
-    *state = tmp + *(p++);
-    if (tmp == 0x100 || p == end)
-      return p;
-  }
-
-  while (p < end) {
-    if      (p[-1] > 1      ) p += 3;
-    else if (p[-2]          ) p += 2;
-    else if (p[-3]|(p[-1]-1)) p++;
-    else {
-      p++;
-      break;
-    }
-  }
-
-  p = FFMIN(p, end) - 4;
-  *state = BS_RB32(p);
-
-  return p + 4;
+  if (m_extradata)
+    delete[] (uint8_t*)m_extradata;
+  if (m_parser)
+    m_dllAvCodec->av_parser_close(m_parser), m_parser = NULL;
+  if (m_context)
+    m_dllAvCodec->avcodec_close(m_context), m_context = NULL;
+  if (m_dllAvCodec)
+    delete m_dllAvCodec, m_dllAvCodec = NULL;
 }
 
 bool CBitstreamParser::FindIdrSlice(const uint8_t *buf, int buf_size)
@@ -270,6 +277,73 @@ bool CBitstreamParser::FindIdrSlice(const uint8_t *buf, int buf_size)
   }
 
   return rtn;
+}
+
+uint8_t* CBitstreamParser::FindExtraData(const uint8_t *buf, int buf_size, double dts, double pts, int *extrasize)
+{
+  if (!buf)
+    return 0;
+
+  if (!m_parser_split)
+    return 0;
+
+  m_extrasize = m_parser->parser->split(m_context, buf, buf_size);
+  if (m_extrasize > 0 && m_extrasize < FF_MAX_EXTRADATA_SIZE)
+  {
+    if (m_extradata)
+      delete[] (uint8_t*)m_extradata;
+    m_extradata = new uint8_t[m_extrasize + FF_INPUT_BUFFER_PADDING_SIZE];
+    memcpy(m_extradata, buf, m_extrasize);
+    memset(m_extradata + m_extrasize, 0x00 , FF_INPUT_BUFFER_PADDING_SIZE);
+    m_parser_split = false;
+  }
+/*
+  uint8_t *outbuf = NULL;
+  int      outbuf_size = 0;
+  int len = m_dllAvCodec->av_parser_parse2(
+    m_parser, m_context, &outbuf, &outbuf_size, buf, buf_size,
+    (int64_t)(pts * DVD_TIME_BASE), (int64_t)(dts * DVD_TIME_BASE), 0);
+
+  m_context->codec_id;
+  m_context->codec_tag;
+  m_context->width;
+  m_context->height;
+  m_context->bits_per_coded_sample;
+  m_context->profile;
+  m_context->level;
+*/
+  *extrasize = m_extrasize;
+  return m_extradata;
+}
+
+const uint8_t* CBitstreamParser::find_start_code(const uint8_t *p,
+  const uint8_t *end, uint32_t *state)
+{
+  assert(p <= end);
+  if (p >= end)
+    return end;
+
+  for (int i = 0; i < 3; i++) {
+    uint32_t tmp = *state << 8;
+    *state = tmp + *(p++);
+    if (tmp == 0x100 || p == end)
+      return p;
+  }
+
+  while (p < end) {
+    if      (p[-1] > 1      ) p += 3;
+    else if (p[-2]          ) p += 2;
+    else if (p[-3]|(p[-1]-1)) p++;
+    else {
+      p++;
+      break;
+    }
+  }
+
+  p = FFMIN(p, end) - 4;
+  *state = BS_RB32(p);
+
+  return p + 4;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////

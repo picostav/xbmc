@@ -113,20 +113,32 @@ typedef struct
   int frame_crop_bottom_offset;
 } sps_info_struct;
 
+////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////
 class CBitstreamParser
 {
 public:
   CBitstreamParser();
   ~CBitstreamParser();
 
-  bool              Open();
-  void              Close();
-  bool              FindIdrSlice(const uint8_t *buf, int buf_size);
+  bool                 Open(enum CodecID codec_id);
+  void                 Close();
+  bool                 FindIdrSlice(const uint8_t *buf, int buf_size);
+  uint8_t*             FindExtraData(const uint8_t *buf, int buf_size, double dts, double pts, int *extrasize);
 
 protected:
-  const uint8_t*    find_start_code(const uint8_t *p, const uint8_t *end, uint32_t *state);
+  const uint8_t*       find_start_code(const uint8_t *p, const uint8_t *end, uint32_t *state);
+
+  DllAvCodec           *m_dllAvCodec;
+  AVCodecParserContext *m_parser;
+  AVCodecContext       *m_context;
+  bool                  m_parser_split;
+  uint8_t              *m_extradata;
+  int                   m_extrasize;
 };
 
+////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////
 class CBitstreamConverter
 {
 public:
