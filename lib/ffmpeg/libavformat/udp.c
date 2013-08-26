@@ -472,6 +472,8 @@ static int udp_open(URLContext *h, const char *uri, int flags)
     } else {
         h->max_packet_size = UDP_MAX_PKT_SIZE;
     }
+    av_log(NULL, AV_LOG_ERROR, "udp_open: pkt_size(%d), fifo_size(%d), buffer_size(%d)\n",
+      h->max_packet_size, s->circular_buffer_size, s->buffer_size);
 
     /* fill the dest addr */
     av_url_split(NULL, 0, NULL, 0, hostname, sizeof(hostname), &port, NULL, 0, uri);
