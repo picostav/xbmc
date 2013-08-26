@@ -652,15 +652,14 @@ AVDictionary *CDVDDemuxFFmpeg::GetFFMpegOptionsFromURL(const CURL &url)
     if (!headers.empty())
       m_dllAvUtil.av_dict_set(&options, "headers", headers.c_str(), 0);
   }
-/*
   else if (protocol.Equals("udp"))
   {
     std::map<CStdString, CStdString> protocolOptions;
     url.GetProtocolOptions(protocolOptions);
 
-    CStdString pkt_size = "5640";
-    CStdString fifo_size = "57344";
-    CStdString buffer_size = "0";
+    CStdString pkt_size = "6580";       // default is 1472
+    CStdString fifo_size = "57344";     // default is 7*4096 (28672)
+    CStdString buffer_size = "131072";  // default is 65536
     for(std::map<CStdString, CStdString>::const_iterator it = protocolOptions.begin(); it != protocolOptions.end(); ++it)
     {
       const CStdString &name = it->first;
@@ -671,13 +670,13 @@ AVDictionary *CDVDDemuxFFmpeg::GetFFMpegOptionsFromURL(const CURL &url)
         // Set the size in bytes of UDP packets
         pkt_size = value;
       }
-      else if (!name.Equals("buf_size"))
+      else if (name.Equals("buf_size"))
       {
         // Set the UDP receiving circular buffer size,
         // expressed as a number of packets with size of 188 bytes
         fifo_size = value;
       }
-      else if (!name.Equals("fifo_size"))
+      else if (name.Equals("fifo_size"))
       {
         // Set the UDP receiving circular buffer size,
         // expressed as a number of packets with size of 188 bytes
@@ -693,9 +692,8 @@ AVDictionary *CDVDDemuxFFmpeg::GetFFMpegOptionsFromURL(const CURL &url)
     m_dllAvUtil.av_dict_set(&options, "pkt_size",    pkt_size.c_str(), 0);
     m_dllAvUtil.av_dict_set(&options, "fifo_size",   fifo_size.c_str(), 0);
     m_dllAvUtil.av_dict_set(&options, "buffer_size", buffer_size.c_str(), 0);
-
   }
-*/
+
   return options;
 }
 
@@ -778,6 +776,7 @@ DemuxPacket* CDVDDemuxFFmpeg::Read()
       // Fast udp/mpegts startup and channel switching.
       // Set streaminfo false and skip avformat_find_stream_info (slow)
       // But we need a proper codec extradata so fill it in for ffmpeg.
+      // This routine is taken from avformat_find_stream_info and friends.
       if(st->parser && st->parser->parser->split && !st->codec->extradata)
       {
           int i= st->parser->parser->split(st->codec, pkt.data, pkt.size);
@@ -791,7 +790,8 @@ DemuxPacket* CDVDDemuxFFmpeg::Read()
               st->codec->extradata= (uint8_t*)m_dllAvUtil.av_malloc(st->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
               if (st->codec->extradata)
               {
-                  CLog::Log(LOGNOTICE, "CDVDDemuxFFmpeg::Read() fetching extradata, extradata_size(%d)", st->codec->extradata_size);
+                  CLog::Log(LOGNOTICE, "CDVDDemuxFFmpeg::Read() fetching extradata, info(%p), codec(%p), extradata_size(%d)",
+                    st->info, st->codec->codec, st->codec->extradata_size);
                   memcpy(st->codec->extradata, pkt.data, st->codec->extradata_size);
                   memset(st->codec->extradata + i, 0, FF_INPUT_BUFFER_PADDING_SIZE);
 
@@ -804,20 +804,29 @@ DemuxPacket* CDVDDemuxFFmpeg::Read()
                       m_dllAvCodec.avcodec_open2(st->codec, codec, &thread_opt);
                       m_dllAvUtil.av_dict_free(&thread_opt);
 
+                      // we don't need to actually decode here
+                      st->codec->skip_idct = AVDISCARD_ALL;
+                      st->codec->skip_frame = AVDISCARD_ALL;
+                      st->codec->skip_loop_filter = AVDISCARD_ALL;
+
                       // This seems suspect, we assume that the key_frame
                       // will be contained in this ffmpeg pkt of demux data,
                       // seems we should fetch and decode until we hit a key_frame.
                       // Yet if we comment it out, this game stops working...
                       AVFrame picture;
-                      int rtn, got_picture = 0;
+                      //m_dllAvCodec.avcodec_get_frame_defaults(&picture);
                       memset(&picture, 0, sizeof(AVFrame));
                       picture.pts = picture.pkt_dts = picture.pkt_pts = picture.best_effort_timestamp = AV_NOPTS_VALUE;
                       picture.pkt_pos = -1;
                       picture.key_frame= 1;
-                    //picture.sample_aspect_ratio = (AVRational){0, 1};
+                      picture.sample_aspect_ratio = (AVRational){0, 1};
                       picture.format = -1;
+
+                      int rtn, got_picture = 0;
                       rtn = m_dllAvCodec.avcodec_decode_video2(st->codec, &picture, &got_picture, &pkt);
                       m_dllAvCodec.avcodec_close(st->codec);
+                      //m_dllAvUtil.av_freep(&st->info);
+
                       st->parser->flags = 0;
                       CLog::Log(LOGNOTICE, "CDVDDemuxFFmpeg::Read() rtn(%d), got_picture(%d)", rtn, got_picture);
                   }
