@@ -44,7 +44,7 @@ CAndroidNetworkManager::~CAndroidNetworkManager()
 
 bool CAndroidNetworkManager::CanManageConnections()
 {
-  return true;
+  return false;
 }
 
 ConnectionList CAndroidNetworkManager::GetConnections()
