@@ -10,6 +10,11 @@ OBJS = libcurl.so \
 PLATFORM_OBJS =
 EXCLUDED_ADDONS = screensaver.rsxs.euphoria visualization.dxspectrum visualization.milkdrop visualization.projectm
 
+# android branding
+XBMCAPP = tofuapp
+XBMCLIB = libtofu.so
+XBMCANDROID  = com/pivos/tofu
+
 XBMCROOT = $(shell cd $(CURDIR)/../../..; pwd)
 COPYDIRS = system addons language media
 AAPT = $(SDKROOT)/platform-tools/aapt
@@ -19,9 +24,9 @@ GCC_VERSION=$(shell $(CC) -dumpversion)
 X86OVERRIDES=XBMC_OVERRIDE_HOST=i686-android-linux XBMC_OVERRIDE_TOOLCHAIN=$(XBMC_X86_TOOLCHAIN)
 ARMOVERRIDES=XBMC_OVERRIDE_HOST=arm-linux-androideabi XBMC_OVERRIDE_TOOLCHAIN=$(XBMC_ARM_TOOLCHAIN)
 
-#this fixes a android ndk fuckup where the pathes to 
-#prebuilt stuff follow different name shemes for
-#arm and x86
+# this fixes a android ndk fuckup where the pathes to 
+# prebuilt stuff follow different name shemes for
+# arm and x86
 ifeq ($(findstring x86,$(PLATFORM)),x86)
 GDBPATH=$(NDKROOT)/toolchains/$(PLATFORM)-$(GCC_VERSION)/prebuilt/gdbserver
 else
@@ -30,27 +35,27 @@ endif
 
 all: package
 SRCLIBS = $(addprefix $(PREFIX)/lib/,$(OBJS)) $(addprefix $(PREFIX)/lib/$(SDK_PLATFORM)/,$(PLATFORM_OBJS))
-DSTLIBS = $(PLATFORM)/lib/libxbmc.so $(addprefix $(PLATFORM)/lib/,$(OBJS)) $(addprefix $(PLATFORM)/lib/,$(PLATFORM_OBJS))
+DSTLIBS = $(PLATFORM)/lib/$(XBMCLIB) $(addprefix $(PLATFORM)/lib/,$(OBJS)) $(addprefix $(PLATFORM)/lib/,$(PLATFORM_OBJS))
 libs= $(DSTLIBS)
 
 multi: x86 arm
-	@cp images/xbmcapp-debug-skeleton.apk images/xbmcapp-debug-multi-unaligned.apk
-	@cd xbmc; zip -r -q ../images/xbmcapp-debug-multi-unaligned.apk lib/ assets
-	@jarsigner -sigalg MD5withRSA -digestalg SHA1 -keystore ~/.android/debug.keystore -storepass android images/xbmcapp-debug-multi-unaligned.apk androiddebugkey
-	@$(SDKROOT)/tools/zipalign -f 4 images/xbmcapp-debug-multi-unaligned.apk $(XBMCROOT)/xbmcapp-multi-debug.apk
-	@rm images/xbmcapp-debug-multi-unaligned.apk
-	@echo "$(XBMCROOT)/xbmcapp-multi-debug.apk created"
+	@cp images/$(XBMCAPP)-debug-skeleton.apk images/$(XBMCAPP)-debug-multi-unaligned.apk
+	@cd xbmc; zip -r -q ../images/$(XBMCAPP)-debug-multi-unaligned.apk lib/ assets
+	@jarsigner -sigalg MD5withRSA -digestalg SHA1 -keystore ~/.android/debug.keystore -storepass android images/$(XBMCAPP)-debug-multi-unaligned.apk androiddebugkey
+	@$(SDKROOT)/tools/zipalign -f 4 images/$(XBMCAPP)-debug-multi-unaligned.apk $(XBMCROOT)/$(XBMCAPP)-multi-debug.apk
+	@rm images/$(XBMCAPP)-debug-multi-unaligned.apk
+	@echo "$(XBMCROOT)/$(XBMCAPP)-multi-debug.apk created"
 
 package: extras
-	@cp images/xbmcapp-debug-skeleton.apk images/xbmcapp-debug-$(PLATFORM)-unaligned.apk
+	@cp images/$(XBMCAPP)-debug-skeleton.apk images/$(XBMCAPP)-debug-$(PLATFORM)-unaligned.apk
 	@javac -classpath $(SDKROOT)/platforms/$(SDK_PLATFORM)/android.jar:xbmc/obj -d xbmc/obj -sourcepath xbmc/src xbmc/src/*.java
-	@javac -classpath $(SDKROOT)/platforms/$(SDK_PLATFORM)/android.jar:xbmc/obj -d xbmc/obj -sourcepath xbmc/src xbmc/src/org/xbmc/xbmc/*.java
+	@javac -classpath $(SDKROOT)/platforms/$(SDK_PLATFORM)/android.jar:xbmc/obj -d xbmc/obj -sourcepath xbmc/src xbmc/src/$(XBMCANDROID)/*.java
 	@$(DX) --dex --output=xbmc/classes.dex xbmc/obj
-	@cd xbmc; zip -r -q ../images/xbmcapp-debug-$(PLATFORM)-unaligned.apk lib/$(PLATFORM) assets classes.dex
-	@jarsigner -sigalg MD5withRSA -digestalg SHA1 -keystore ~/.android/debug.keystore -storepass android images/xbmcapp-debug-$(PLATFORM)-unaligned.apk androiddebugkey
-	@$(SDKROOT)/tools/zipalign -f 4 images/xbmcapp-debug-$(PLATFORM)-unaligned.apk $(XBMCROOT)/xbmcapp-$(PLATFORM)-debug.apk
-	@rm images/xbmcapp-debug-$(PLATFORM)-unaligned.apk
-	@echo "$(XBMCROOT)/xbmcapp-$(PLATFORM)-debug.apk created"
+	@cd xbmc; zip -r -q ../images/$(XBMCAPP)-debug-$(PLATFORM)-unaligned.apk lib/$(PLATFORM) assets classes.dex
+	@jarsigner -sigalg MD5withRSA -digestalg SHA1 -keystore ~/.android/debug.keystore -storepass android images/$(XBMCAPP)-debug-$(PLATFORM)-unaligned.apk androiddebugkey
+	@$(SDKROOT)/tools/zipalign -f 4 images/$(XBMCAPP)-debug-$(PLATFORM)-unaligned.apk $(XBMCROOT)/$(XBMCAPP)-$(PLATFORM)-debug.apk
+	@rm images/$(XBMCAPP)-debug-$(PLATFORM)-unaligned.apk
+	@echo "$(XBMCROOT)/$(XBMCAPP)-$(PLATFORM)-debug.apk created"
 
 extras: libs
 	rm -rf xbmc/assets/python2.6/lib/
@@ -64,15 +69,15 @@ extras: libs
 	cp -rfp $(XBMCROOT)/media/Splash.png xbmc/res/drawable/splash.png
 	cd xbmc/assets/python2.6/lib/python2.6/; rm -rf test config lib-dynload
 	mkdir -p tmp/res; $(AAPT) c -S xbmc/res -C tmp/res; cp -r -n xbmc/res tmp/ || true
-	$(AAPT) p -f -I $(SDKROOT)/platforms/$(SDK_PLATFORM)/android.jar -S tmp/res/ -M xbmc/AndroidManifest.xml -F images/xbmcapp-debug-skeleton.apk -J xbmc/src
+	$(AAPT) p -f -I $(SDKROOT)/platforms/$(SDK_PLATFORM)/android.jar -S tmp/res/ -M xbmc/AndroidManifest.xml -F images/$(XBMCAPP)-debug-skeleton.apk -J xbmc/src
 	test -d config && cp -f config/* xbmc/assets/system
 	@rm -rf tmp/
 
-libs: $(PREFIX)/lib/xbmc/libxbmc.so
+libs: $(PREFIX)/lib/xbmc/$(XBMCLIB)
 	rm -rf xbmc/lib/$(PLATFORM) xbmc/libs/$(PLATFORM) xbmc/obj/local/$(PLATFORM)
 	mkdir -p xbmc/lib/$(PLATFORM) images xbmc/assets/python2.6/lib/ xbmc/libs/$(PLATFORM) xbmc/obj/local/$(PLATFORM)
 	cp -fp $(SRCLIBS) xbmc/obj/local/$(PLATFORM)/
-	cp -fp $(PREFIX)/lib/xbmc/libxbmc.so xbmc/obj/local/$(PLATFORM)/
+	cp -fp $(PREFIX)/lib/xbmc/$(XBMCLIB) xbmc/obj/local/$(PLATFORM)/
 	find $(PREFIX)/lib/xbmc/addons -name "*.so" -exec cp -fp {} xbmc/obj/local/$(PLATFORM)/ \;
 	find $(PREFIX)/lib/xbmc/system -name "*.so" -exec cp -fp {} xbmc/obj/local/$(PLATFORM)/ \;
 	cd xbmc/obj/local/$(PLATFORM)/; find . -name "*.so" -not -name "lib*.so" | sed "s/\.\///" | xargs -I@ mv @ lib@
@@ -84,7 +89,7 @@ libs: $(PREFIX)/lib/xbmc/libxbmc.so
 	     "$(NDKROOT)/sources/cxx-stl/gnu-libstdc++/include/$(GCC_VERSION) $(XBMCROOT)  $(PREFIX)/include jni" >> ./xbmc/libs/$(PLATFORM)/gdb.setup
 	cp -fp xbmc/libs/$(PLATFORM)/* xbmc/lib/$(PLATFORM)
 
-$(PREFIX)/lib/xbmc/libxbmc.so: $(SRCLIBS)
+$(PREFIX)/lib/xbmc/$(XBMCLIB): $(SRCLIBS)
 	$(MAKE) -C ../depends/xbmc
 
 $(SRCLIBS):

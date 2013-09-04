@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- BEGIN_INCLUDE(manifest) -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="org.xbmc.xbmc"
+    package="com.pivos.tofu"
     android:versionCode="9"
     android:versionName="12.2" >
 
@@ -68,7 +68,7 @@
             android:name=".Main"
             android:configChanges="orientation|keyboardHidden"
             android:finishOnTaskLaunch="true"
-            android:label="XBMC"
+            android:label="ToFu"
             android:launchMode="singleInstance"
             android:screenOrientation="sensorLandscape"
             android:theme="@android:style/Theme.NoTitleBar.Fullscreen" >
@@ -76,7 +76,7 @@
             <!-- Tell NativeActivity the name of or .so -->
             <meta-data
                 android:name="android.app.lib_name"
-                android:value="xbmc" />
+                android:value="tofu" />
         </activity>
     </application>
 
