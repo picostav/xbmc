@@ -2,7 +2,7 @@
 <!-- BEGIN_INCLUDE(manifest) -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.pivos.tofu"
-    android:versionCode="9"
+    android:versionCode="10"
     android:versionName="12.2" >
 
     <!-- This is the platform API where NativeActivity was introduced. -->
