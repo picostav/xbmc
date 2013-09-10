@@ -9,6 +9,7 @@ SOURCE=$(LIBNAME)-$(VERSION)
 FILENAME=v$(VERSION)
 ARCHIVE=$(SOURCE).tar.gz
 
+ICONV=$(PREFIX)/lib/libiconv.a
 LIBDYLIB=$(PLATFORM)/build/src/libplist++.so
 
 all: .installed-$(PLATFORM)
@@ -20,8 +21,7 @@ $(PLATFORM): $(TARBALLS_LOCATION)/$(ARCHIVE) $(DEPS)
 	rm -rf $(PLATFORM); mkdir -p $(PLATFORM)
 	$(ARCHIVE_TOOL) $(ARCHIVE_TOOL_FLAGS) $(TARBALLS_LOCATION)/$(ARCHIVE)
 	cd $(PLATFORM); patch -p1 < ../0001-dontbuildswig.patch
-	cd $(PLATFORM); patch -p0 < ../0002-missing-libs.patch
-	cd $(PLATFORM); patch -p0 < ../0003-no-so-version.patch
+	cd $(PLATFORM); sed -ie 's|TARGET_LINK_LIBRARIES( plist $${LIBXML2_LIBRARIES} |TARGET_LINK_LIBRARIES( plist m z $${LIBXML2_LIBRARIES} $(ICONV) |' src/CMakeLists.txt
 	cd $(PLATFORM); rm -rf build; mkdir -p build
 	cd $(PLATFORM)/build; CC=$(CC) CXX=$(CXX) cmake        \
 	  -DCMAKE_C_FLAGS:STRING="$(CPPFLAGS) $(CFLAGS)"     \
@@ -38,11 +38,14 @@ $(LIBDYLIB): $(PLATFORM)
 
 .installed-$(PLATFORM): $(LIBDYLIB)
 	$(MAKE) -C $(PLATFORM)/build install
-
-	rm -f $(PREFIX)/lib/libplist.la
+	rm -f $(PREFIX)/lib/libplist.la $(PREFIX)/lib/libplist.so $(PREFIX)/lib/libplist.so.1
+	mv -f $(PREFIX)/lib/libplist.so.1.1.6 $(PREFIX)/lib/libplist.so
+	$(RPL) -e "libplist.so.1" "libplist.so\x00\x00" $(PREFIX)/lib/libplist.so
 	-$(READELF) --dynamic $(PREFIX)/lib/libplist.so | grep ibrary
-
-	rm -f $(PREFIX)/lib/libplist++.la
+	rm -f $(PREFIX)/lib/libplist++.la $(PREFIX)/lib/libplist++.so $(PREFIX)/lib/libplist++.so.1
+	mv -f $(PREFIX)/lib/libplist++.so.1.1.6 $(PREFIX)/lib/libplist++.so
+	$(RPL) -e "libplist++.so.1" "libplist++.so\x00\x00" $(PREFIX)/lib/libplist++.so
+	$(RPL) -e "libplist.so.1" "libplist.so\x00\x00" $(PREFIX)/lib/libplist++.so
 	-$(READELF) --dynamic $(PREFIX)/lib/libplist++.so | grep ibrary
 	touch $@
 
