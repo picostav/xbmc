@@ -780,7 +780,13 @@ DemuxPacket* CDVDDemuxFFmpeg::Read()
       if(st->parser && st->parser->parser->split && !st->codec->extradata)
       {
           int i= st->parser->parser->split(st->codec, pkt.data, pkt.size);
-          if (i > 0 && i < FF_MAX_EXTRADATA_SIZE)
+          if (i == 0)
+          {
+            CLog::Log(LOGNOTICE, "CDVDDemuxFFmpeg::Read() st->parser->parser->split, no extradata");
+            pPacket = CDVDDemuxUtils::AllocateDemuxPacket(0);
+            return pPacket;
+          }
+          else if (i > 0 && i < FF_MAX_EXTRADATA_SIZE)
           {
               // Found extradata, fill it in, this will cause
               // a new stream to be created and used. Watch out in
@@ -828,7 +834,16 @@ DemuxPacket* CDVDDemuxFFmpeg::Read()
                       //m_dllAvUtil.av_freep(&st->info);
 
                       st->parser->flags = 0;
-                      CLog::Log(LOGNOTICE, "CDVDDemuxFFmpeg::Read() rtn(%d), got_picture(%d)", rtn, got_picture);
+                      int has_codec_parameters = st->codec->width && st->codec->pix_fmt != PIX_FMT_NONE;
+                      CLog::Log(LOGNOTICE, "CDVDDemuxFFmpeg::Read() "
+                        "rtn(%d), got_picture(%d), has_codec_parameters(%d)",
+                         rtn, got_picture, has_codec_parameters);
+
+                      if (!has_codec_parameters)
+                      {
+                        pPacket = CDVDDemuxUtils::AllocateDemuxPacket(0);
+                        return pPacket;
+                      }
                   }
               }
           }
