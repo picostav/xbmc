@@ -145,23 +145,30 @@ bool CWinEventsAndroid::MessagePump()
     {
       int             item;
       int             type;
-      float           fvalue;
       uint32_t        holdTime;
       APP_InputDevice input_device;
 
       type = pumpEvent->type;
       if (type == XBMC_JOYAXISMOTION)
       {
+        // The typical joystick keymap xml has the following where 'id' is the axis
+        //  and 'limit' is which action to choose (ie. Up or Down).
+        //  <axis id="5" limit="-1">Up</axis>
+        //  <axis id="5" limit="+1">Down</axis>
+        // One would think that limits is in reference to fvalue but
+        // it is really in reference to id :) The sign of item passed
+        // into ProcessJoystickEvent indicates the action mapping.
         item = pumpEvent->jaxis.axis;
-        fvalue = pumpEvent->jaxis.fvalue;
+        if (pumpEvent->jaxis.fvalue < 0.0f)
+          item = -item;
         holdTime = 0;
         input_device.id = pumpEvent->jaxis.which;
-        CLog::Log(LOGDEBUG, "CWinEventsAndroid::MessagePump:item(%d), fvalue(%f)", item, fvalue);
+        //CLog::Log(LOGDEBUG, "CWinEventsAndroid::MessagePump:"
+        //  "item(%d), fvalue(%f)", item, pumpEvent->jaxis.fvalue);
       }
       else
       {
         item = pumpEvent->jbutton.button;
-        fvalue = 1.0;
         holdTime = pumpEvent->jbutton.holdTime;
         input_device.id = pumpEvent->jbutton.which;
       }
@@ -187,18 +194,8 @@ bool CWinEventsAndroid::MessagePump()
       // non-working, review this later.
       //CWinEventsAndroid::Get().HandleItemRepeat(pumpEvent);
 
-      // The typical joystick keymap xml has the following where 'id' is the axis
-      //  and 'limit' is which action to choose (ie. Up or Down).
-      //  <axis id="5" limit="-1">Up</axis>
-      //  <axis id="5" limit="+1">Down</axis>
-      // One would think that limits is in reference to fvalue but
-      // it is really in reference to id :) The sign of item passed
-      // into ProcessJoystickEvent indicates the action mapping.
-      // fvalue is already full range (-1 to 1).
-      if (fvalue < 0.0)
-        item = -item;
       ret |= g_application.ProcessJoystickEvent(input_device.name,
-        item, type == XBMC_JOYAXISMOTION, fvalue, holdTime);
+        item, type == XBMC_JOYAXISMOTION, 1.0f, holdTime);
     }
     else
     {
