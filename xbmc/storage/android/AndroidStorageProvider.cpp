@@ -40,11 +40,12 @@ void CAndroidStorageProvider::GetLocalDrives(VECSOURCES &localDrives)
     share.m_ignore = true;
     localDrives.push_back(share);
   }
-
+#if 0
   // root directory
   share.strPath = "/";
   share.strName = g_localizeStrings.Get(21453);
   localDrives.push_back(share);
+#endif
 }
 
 void CAndroidStorageProvider::GetRemovableDrives(VECSOURCES &removableDrives)
@@ -61,10 +62,12 @@ std::vector<CStdString> CAndroidStorageProvider::GetDiskUsage()
   CXBMCApp::GetStorageUsage("", usage);
   result.push_back(usage);
 
+#if 0
   usage.clear();
   // add rootfs
   if (CXBMCApp::GetStorageUsage("/", usage) && !usage.empty())
     result.push_back(usage);
+#endif
 
   usage.clear();
   // add external storage if available
