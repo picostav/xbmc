@@ -409,20 +409,6 @@
 						<texturefocus>MenuItemFO.png</texturefocus>
 						<texturenofocus>MenuItemNF.png</texturenofocus>
 					</control>
-					<control type="radiobutton" id="204">
-						<description>enable weather info</description>
-						<width>750</width>
-						<height>40</height>
-						<font>font13</font>
-						<textcolor>grey2</textcolor>
-						<focusedcolor>white</focusedcolor>
-						<label>20084</label>
-						<onclick>Skin.ToggleSetting(homepageWeatherinfo)</onclick>
-						<selected>Skin.HasSetting(homepageWeatherinfo)</selected>
-						<texturefocus>MenuItemFO.png</texturefocus>
-						<texturenofocus>MenuItemNF.png</texturenofocus>
-						<visible>!IsEmpty(Weather.Plugin)</visible>
-					</control>
 					<control type="radiobutton" id="205">
 						<description>Show Recently added Video info</description>
 						<width>750</width>
@@ -536,19 +522,6 @@
 						<label>$LOCALIZE[31111] - $LOCALIZE[0]</label>
 						<onclick>Skin.ToggleSetting(HomeMenuNoProgramsButton)</onclick>
 						<selected>Skin.HasSetting(HomeMenuNoProgramsButton)</selected>
-						<texturefocus>MenuItemFO.png</texturefocus>
-						<texturenofocus>MenuItemNF.png</texturenofocus>
-					</control>
-					<control type="radiobutton" id="228">
-						<description>Hide Weather Button</description>
-						<width>750</width>
-						<height>40</height>
-						<font>font13</font>
-						<textcolor>grey2</textcolor>
-						<focusedcolor>white</focusedcolor>
-						<label>$LOCALIZE[31111] - $LOCALIZE[8]</label>
-						<onclick>Skin.ToggleSetting(HomeMenuNoWeatherButton)</onclick>
-						<selected>Skin.HasSetting(HomeMenuNoWeatherButton)</selected>
 						<texturefocus>MenuItemFO.png</texturefocus>
 						<texturenofocus>MenuItemNF.png</texturenofocus>
 					</control>

@@ -17,4 +17,7 @@
     <input>
         <remoteaskeyboard>true</remoteaskeyboard>
     </input>
+    <weather>
+        <addon></addon>
+    </weather>
 </settings>
