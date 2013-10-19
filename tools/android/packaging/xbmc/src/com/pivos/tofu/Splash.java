@@ -189,7 +189,7 @@ public class Splash extends Activity {
         mSplash.mProgress.setProgress(values[0]);
         break;
       case StartingXBMC:
-        mSplash.mTextView.setText("Starting ToFu...");
+        mSplash.mTextView.setText("Starting TOFU...");
         mSplash.mProgress.setVisibility(View.INVISIBLE);
         break;
       }
@@ -269,7 +269,7 @@ public class Splash extends Activity {
     } else {
       ret = CheckCpuFeature("neon");
       if (!ret) {
-        mErrorMsg = "This package is not compatible with your device.\nPlease check the <a href=\"http://wiki.pivos.com/index.php?title=ToFu_for_Android_specific_FAQ\">ToFu Android wiki</a> for more information.";
+        mErrorMsg = "This package is not compatible with your device.\nPlease check the <a href=\"http://wiki.pivos.com/index.php?title=TOFU_for_Android_specific_FAQ\">TOFU Android wiki</a> for more information.";
         mState = State.InError;
       }
     }

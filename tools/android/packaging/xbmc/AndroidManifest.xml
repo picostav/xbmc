@@ -66,7 +66,7 @@
             android:name=".Main"
             android:configChanges="orientation|keyboardHidden"
             android:finishOnTaskLaunch="true"
-            android:label="ToFu"
+            android:label="TOFU"
             android:launchMode="singleInstance"
             android:screenOrientation="sensorLandscape"
             android:theme="@android:style/Theme.NoTitleBar.Fullscreen" >
